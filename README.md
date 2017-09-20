@@ -7,4 +7,3 @@ Fall 2017 BIOL 255E class materials.
 
 Here is my testing branch. 
 
-Here are my server-side changes to this file. 
