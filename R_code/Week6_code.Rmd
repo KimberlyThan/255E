@@ -83,3 +83,4 @@ mySE(mydf$Values[7:12])
 aggregate(Values~Group, data = mydf, FUN = mySE)
 
 ```
+

@@ -164,23 +164,27 @@ NOAAfunction <- function(station, startDate, endDate){
 
 ```{r plotFunction}
 # Create a plotting function for the tide data 
-plotTides <- function(df){
+plotTides <- function(df, mytitle = ""){
   plot(x = df$TimeUTC, y = df$TideHT, type = 'l',
        xlab = 'Date',
        ylab = 'Tide Height, m',
-       col = 'blue')
+       col = 'red',
+       main = mytitle)
 }
   
 ```
 
 ```{r grabJan, cache=TRUE, message=FALSE, warning=FALSE}
-jan = NOAAfunction(9413450, 20160101, 20160201)
+jan = NOAAfunction(9413450, 20170101, 20170201)
+plotTides(jan, mytitle = "January 2017 Tide Heights")
 ```
 
 ```{r grabFeb, cache=TRUE, message=FALSE, warning=FALSE}
-feb = NOAAfunction(9413450, 20160201, 20160301)
+feb = NOAAfunction(9413450, 20170201, 20170301)
+plotTides(feb, mytitle = "February 2017 Tide Height")
 ```
 
 ```{r grabMar, cache=TRUE, message=FALSE, warning=FALSE}
-mar = NOAAfunction(9413450, 20160301, 20160401)
+mar = NOAAfunction(9413450, 20170301, 20170401)
+plotTides(mar, mytitle = "March 2017 Tide Height")
 ```
