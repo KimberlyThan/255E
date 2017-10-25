@@ -1,0 +1,254 @@
+---
+title: "Homework 8"
+author: "Arthur Harnisch"
+date: "October 15, 2017"
+output: word_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+
+```
+
+Use the files in the temperature_trials folder, plus the metadata file 'Heating_trial_info.xlsx' to replicate the two plot
+
+
+Use relative file paths in your .Rmd file, and assume that your .Rmd file resides in a folder like 255E/Week8 while the data files are in 255E/data/ and 255E/data/temperature_trials/
+
+1st Importing data 
+
+```{r dataImport}
+
+#importing the heating trial info xlsx sheet
+
+library(xlsx)
+heating = read.xlsx("../data/Heating_trial_info.xlsx", sheetIndex = 1)
+
+
+#using a pattern and for loop to import multiple temperature trials 
+
+myfiles=dir("../data/temperature_trials", pattern = "*.csv$", all.files = TRUE, full.names = TRUE)
+
+
+for(i in 1: length(myfiles) ){
+  
+  #open each file
+  read.csv(myfiles[i])
+  temp = read.csv(myfiles[i])
+ 
+  temp$DateTime = as.POSIXct(temp$DateTime, origin = '1970-1-1', tz="")
+  
+  temp$elapsedTime = difftime(temp$DateTime, temp$DateTime[1], units = 'mins') 
+ 
+  temp$elapsedTimeMin = as.numeric(temp$elapsedTime)
+ 
+  
+    loc = (regexpr(pattern ="Trial[0-9]*", text = myfiles [i]))
+
+
+  trialNumber = as.numeric(substr(myfiles[i], start = loc[[1]][1]+5, 
+       stop = loc[[1]][1] + attr(loc, 'match.length')-1))
+  
+  temp$TrialNumber =trialNumber
+  
+    if ( i == 1){
+  res = temp
+  } else {
+  res = rbind( res, temp)
+}
+}
+
+res$DateTime = as.POSIXct(res$DateTime, origin = '1970-1-1', tz="")
+
+res$POSIXt = as.POSIXct(res$POSIXt, origin = '1970-1-1', tz='')
+
+
+
+```
+Subsetting the imported data
+```{r subSetdata}
+
+#using elapsed time column until zero and plot, usinh the lines function. you can also append a new column from the import function
+#add a line for pull fiel name out and add it to another column. 
+# pull out the trial number 
+
+###grab the trial number 
+
+fnames = dir("../data/temperature_trials", 
+             pattern = "*.csv", full.names = TRUE)
+
+for (i in 1:length(fnames)){
+
+
+#allows to add new column
+
+
+
+  
+  loc = (regexpr(pattern ="Trial[0-9]*", text = fnames [i]))
+
+
+  trialNumber = as.numeric(substr(fnames[i], start = loc[[1]][1]+5, 
+       stop = loc[[1]][1] + attr(loc, 'match.length')-1))
+  
+  temp$TrialNumber =trialNumber
+  
+ print(trialNumber)
+}
+
+
+
+head(heating)
+
+head(res)
+
+
+#calculate a time for each entry
+
+
+
+
+```
+
+#write a routine to import multiple CSv
+
+# this could be done through, looping data could do this. for (i in 1:){
+
+#} # questions is from one to what. 
+
+
+make an initial plot then use for loop to add the other trials lines
+
+```{r plotRes}
+#TC0~elapsedTime
+#data = res[res$trialNumber ==1
+#ploting trial 1 use plot command then lines command 
+
+firstTrial =1
+plot(x=res$elapsedTimeMin[res$TrialNumber ==1], y= res$TC0[res$TrialNumber == firstTrial],
+      
+     type = 'l', 
+     xlab = 'Elapsed time, Minutes',
+     ylab = 'temperature C', las = 1,
+xlim  = c(0,max(res$elapsedTime)),
+ylim = c(min(res$TC0), max(res$TC0)))
+
+mtext(text = "Channel TC0 for each Trial", side = 3, line =1.4, cex =  1.5, 
+adj = 0)
+
+# elapsedTime)),
+
+
+trialNums = unique(res$TrialNumber)
+
+for(y in 2:length(trialNums) ){
+  lines(x = res$elapsedTimeMin[res$TrialNumber == trialNums[y]],
+  y=res$TC0[res$TrialNumber == trialNums[y]], col = y)
+}
+
+
+```
+Matching and Second plot for temperature data from location In50 for each trial Number. 
+
+```{r matching}
+
+#goal is to make the second plot, we wiil need the trial heating info, we will need to extract the channel, extra in50 for each trial. channel # is located ch0-ch7, # get a channel label, 
+library(xlsx)
+
+heatingInfo = read.xlsx("../data/Heating_trial_info.xlsx", sheetIndex = 1)
+
+heatingInfo$TCchannel = as.character(heatingInfo$TCchannel)
+
+chloc = regexpr(pattern = "[[:digit:]]", heatingInfo$TCchannel[2])
+
+
+chNum = substr(heatingInfo$TCchannel[1], start = chloc[[1]][1], stop = chloc[[1]][1])
+
+chName = paste("TC", chNum, sep = "")
+
+
+temps = res[ , "TC0"]
+
+
+
+####### get the channel number 
+
+
+
+#for(x in 1:96){
+  
+
+for(x in 1:96)
+ if  (heatingInfo$TCLocation[x] == "In50") {
+   chloc = regexpr(pattern = "[[:digit:]]", 
+                   heatingInfo$TCchannel[x]) 
+   chNum = substr(heatingInfo$TCchannel[x], 
+                  start = chloc[[1]][1], stop = chloc[[1]][1])
+   chName = paste("TC", chNum, sep = "")
+   trialNumber = heatingInfo$TrialNumber[x]
+   
+   temps = res[ res$TrialNumber == trialNumber , chName]
+   
+  times= res$elapsedTimeMin[res$TrialNumber == trialNumber]
+
+   
+  print(x)
+  
+ plot(x= times, y = temps,
+      
+     type = 'l', 
+     xlab = 'Elapsed time, Minutes',
+     ylab = 'temperature C', las = 1,
+xlim  = c(0,max(times)),
+ylim = c(min(temps), max(temps)))
+
+mtext(text = "Location In50 for each Trial Number", side = 3, line =1.4, cex =  1.5, 
+adj = 0)
+
+
+#commented out line function from class
+
+#trialNums = unique(res$TrialNumber)
+
+#for(y in 2:length(trialNums) ){
+  #lines(x = res$elapsedTimeMin[res$TrialNumber == trialNums[y]],
+ # y=res$TC0[res$TrialNumber == trialNums[y]], col = y)
+#}
+
+
+
+#attempt to fix lines funciton for second plot
+
+#trialNum = res$TrialNumber
+
+  #for(y in 2:length(trialNum) ){
+  #lines(x = times == trialNum[y]],
+ #y=temps, col = y)
+}
+
+  
+  
+  
+  #will rpobably need some logic in here to make a plot the first time and then use lines function every time after that. 
+ 
+  
+# }
+
+
+#asked for maximum   max(which(heatingInfo$heatingInfo$trail ==12))
+
+
+#do not want to go beyond row 12
+
+#get the numeric channel out
+
+
+
+##
+
+```
+
+
+
+

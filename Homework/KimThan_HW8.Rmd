@@ -1,0 +1,116 @@
+---
+title: "KimThan_HW8"
+author: "Kimberly Than"
+date: "October 17, 2017"
+output: word_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Importing data 
+
+Here we are importing multiple .csv files and combining them into one large data frame. 
+We are also using POSIX time to convert the x-axis to elapsed time in minutes. 
+
+```{r importData}
+fnames = dir("../data/temperature_trials", 
+             pattern = "*.csv", full.names = TRUE)
+
+for(i in 1: length(fnames) ){
+  
+  #open each file
+  read.csv(fnames[i])
+  temp = read.csv(fnames[i])
+  # temp$TrialNumber = 
+  temp$DateTime = as.POSIXct(temp$DateTime, origin = '1970-1-1', tz = "")
+  temp$elapsedTime = difftime(temp$DateTime, temp$DateTime[1], units = 'mins')
+  temp$elapsedTimeMin = as.numeric(temp$elapsedTime)
+  
+  #####
+  # Grab the trial number
+  loc = (regexpr(pattern ="Trial[0-9]*", text = fnames [i]))
+
+
+  trialNumber = as.numeric(substr(fnames[i], start = loc[[1]][1]+5, 
+       stop = loc[[1]][1] + attr(loc, 'match.length')-1))
+  temp$trialNumber = trialNumber
+  
+  # rbind the new data in temp to the previous data in res
+  if ( i == 1){
+    res = temp
+  } else {
+    res = rbind( res, temp)
+  }
+}
+
+res$POSIXt = as.POSIXct(res$POSIXt, origin = '1970-1-1', tz = "")
+```
+
+## Plotting first graph 
+
+Here we are plotting all of the temperature data from channel TC0 for each trial. We plotted the first trial using plot() and then the 
+rest of the trials using lines().
+
+```{r plotRes}
+firstTrial = 1
+plot(x = res$elapsedTimeMin[res$trialNumber == firstTrial], 
+     y = res$TC0[res$trialNumber == 1], 
+     # TC0~elapsedTime, data = res[res$trialNumber == firstTrial]
+     type = 'l',
+     xlab = 'Elapsed Time, minutes',
+     ylab = 'Temperature, C', 
+     las = 1,
+     xlim = c(min(res$elapsedTimeMin), max(res$elapsedTimeMin)), 
+     ylim = c(min(res$TC0), max(res$TC0)),
+     main = 'Channel TC0 for each Trial')
+
+mtext(text = 'Channel TC0 for each Trial', side = 3, line = 2, cex = 1.5, adj = 0)
+
+trialNums = unique(res$trialNumber)
+for (y in 2:length(trialNums)){
+  lines(x = res$elapsedTimeMin[res$trialNumber == trialNums[y]],
+        y = res$TC0[res$trialNumber == trialNums[y]],
+        col = y)  
+}
+```
+
+## Importing Mussel Information 
+
+Here we importing heating information that holds the information of the location ln50 for each trial.
+
+```{r importMussel Info}
+library(xlsx)
+# info = read.xlsx("../data/Mussel_info.xlsx", sheetIndex = 1)
+
+heatingInfo = read.xlsx("../data/Heating_trial_info.xlsx", sheetIndex = 1)
+heatingInfo$TCchannel = as.character(heatingInfo$TCchannel)
+
+for (x in 1:nrow(heatingInfo)){
+  if (heatingInfo$TCLocation[x] == "In50") {
+    chloc = regexpr(pattern = "[[:digit:]]", heatingInfo$TCchannel[2])
+    chNum = substr(heatingInfo$TCchannel[1], 
+               start = chloc[1][1],
+               stop = chloc[1][1])
+    chName = paste("TC", chNum, sep = "")
+    trialNumber = heatingInfo$TrialNumber[x]
+    
+    temps = res[res$trialNumber == trialNumber ,chName]
+    times = res$elapsedTimeMin[res$trialNumber == trialNumber]
+    # res$chName[res$trialNumber == trialNumber] # won't work 
+  }
+}
+```
+
+```{r plotRes2}
+plot(x = times,
+     y = temps,
+     type = 'l',
+     xlab = 'Elapsed Time, minutes',
+     ylab = 'Temperature, C',
+     xlim = c(0, max(times)),
+     ylim = c(min(temps), max(temps)))
+
+     
+```

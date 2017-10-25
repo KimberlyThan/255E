@@ -1,0 +1,151 @@
+---
+title: '171011'
+author: "Arthur Harnisch"
+date: "October 11, 2017"
+output: word_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+
+```{r importingFiles}
+
+#write a routine to import multiple CSv
+
+# this could be done through, looping data could do this. for (i in 1:){
+
+#} # questions is from one to what. 
+
+fnames = dir("./data/temperature_trials", 
+             pattern = "*.csv", full.names = TRUE)
+
+
+for(i in 1: length(fnames) ){
+  
+  #open each file
+  read.csv(fnames[i])
+  temp = read.csv(fnames[i])
+  
+  if ( i == 1){
+  res = temp
+  } else {
+  res = rbind( res, temp)
+}
+}
+
+
+res$DateTime = as.POSIXct(res$DateTime, origin = '1970-1-1', tz="")
+
+
+```
+
+
+as long as data is in the same data folder it should import it and bind to it. 
+
+
+
+```{r matchingFiles}
+
+#using the heating trial info and musscles info. 
+
+#both contain meta data. #reg expr finds matches within the file name. 
+
+
+for (i in 1:length(fnames)){
+loc = (regexpr(pattern ="Trial[0-9]*", text = fnames [i]))
+
+
+  trialNumber = as.numeric(substr(fnames[i], start = loc[[1]][1]+5, 
+       stop = loc[[1]][1] + attr(loc, 'match.length')-1))
+  
+ print(trialNumber)
+}
+
+
+
+
+fnames[1]
+
+regexpr(pattern ="Trial[0-9]", text = fnames [i])
+
+#match at 42 match length is 6 long
+
+loc = regexpr(pattern ="Trial[0-9]*", text = fnames [12])
+
+#?substr
+
+substr(fnames[1], start = loc[[1]][1], 
+       stop = 47)
+#this gives trial 1
+
+trialNumber = as.numeric(substr(fnames[12], start = loc[[1]][1]+5, 
+       stop = loc[[1]][1] + attr(loc, 'match.length')-1))
+
+```
+
+
+```{r importMussel Info}
+
+library(xlsx)
+
+info = read.xlsx("../data/Mussel_info.xlsx", sheetIndex = 1)
+
+```
+
+
+```{r convertTag}
+# leaving with character values
+info$Tag.Color.. = as.character(info$Tag.Color..)
+
+info$Tag.Color.. #gives character strings
+
+substr(info$Tag.Color.., start = 1, stop = 1)
+
+
+regexpr(pattern = "[0-9]*$", text = info$Tag.Color[9])
+
+
+for (i in 1:nrow(info)){
+    #extract the 1st letter of the color, for the current row i
+  color = substr(info$Tag.Color[i],start = 1, stop =1)
+  #Get the location of a 1 or 2 digit number in the current row i
+  #of info$TagColor
+  loc=regexpr(pattern ="[0-9]*$", text = info$Tag.Color[i])
+  #Extract the digits from info$TagColor
+digits=substr(info$Tag.Color[i], start = loc[[1]][1], 
+stop =loc[[1]]+ attr(loc,'match.length')-1)
+tagID = paste(digits,color, sep="")
+print(tagID)
+#write the new tag ID info its own column in info, using th ecurrent
+#row to make sure it matches up with whatever row i we are on. 
+
+info$TagID[i] = tagID
+}
+
+
+paste()
+
+
+```
+```{r stuff}
+
+for(i in 1: length(fnames) ){
+  
+  #open each file
+  read.csv(fnames[i])
+  temp = read.csv(fnames[i])
+  temp$TrialNumber=
+  if ( i == 1){
+  res = temp
+ 
+  
+  } else {
+  res = rbind( res, temp)
+}
+}
+
+
+```

@@ -1,0 +1,72 @@
+---
+title: "KimThan_HW7"
+author: "Kimberly Than"
+date: "October 9, 2017"
+output: word_document
+---
+
+```{r setup, include=FALSE, cache=TRUE}
+library(knitr)
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r importData}
+CSU = read.csv("../data/california-state-university-2015.csv")
+CSU$Employee.Name = as.character(CSU$Employee.Name)
+```
+
+## Problem 1
+Find all entries with name "Martinez".
+
+```{r findMartinez}
+CSU$Employee.Name[grepl(pattern = 'Martinez', CSU$Employee.Name)]
+```
+
+## Problem 2
+Find everyone whose name starts with the letter "Wil".
+
+```{r findWil}
+CSU$Employee.Name[grepl(pattern = '^Wil', CSU$Employee.Name)]
+```
+
+## Problem 3
+Find everyone with a hyphenated name (i.e. William-Sonoma).
+
+```{r findHyphen}
+hyphen_pattern = '[[:alpha:]]-[[:alpha:]]'
+CSU$Employee.Name[grepl(hyphen_pattern, CSU$Employee.Name)]
+```
+
+## Problem 4
+Find everyone whose middle name is 'Paul' (i.e. Matthew Paul Mark). 
+```{r findMiddle}
+middle_pattern = '[[:blank:]]Paul\\b'
+CSU$Employee.Name[grepl(middle_pattern, CSU$Employee.Name)]
+```
+
+## Problem 5
+Find all people with the last name 'Martinez'. 
+
+```{r findLast}
+CSU$Employee.Name[grepl(pattern = 'Martinez$', CSU$Employee.Name)]
+```
+
+## Problem 6
+Find all people with the last name 'Martinez' (but no hyphenated names, no Jr.).
+
+```{r findLast2}
+CSU$Employee.Name[grepl(pattern = '[[:blank:]]Martinez$', CSU$Employee.Name)]
+```
+
+## Problem 7
+Find all whose first name starts with 'E', has a middle initial, and last name is 'Martinez' (i.e. Eddie Martinez).
+```{r findE}
+length(grep('(^E)(.*\\s.\\s)(.*?Martinez$)', CSU$Employee.Name, perl = TRUE, value = TRUE))
+grep('(^E)(.*\\s.\\s)(.*?Martinez$)', CSU$Employee.Name, perl = TRUE, value = TRUE)
+```
+
+## Problem 8
+Find all whose first name starts with 'E', has NO middle initial, and last name is 'Martinez' (i.e. Edgar Martinez).
+```{r findE}
+grep('(^E)(?!.*\\s.\\s)(.*?Martinez$)', CSU$Employee.Name, perl = TRUE, value = TRUE)
+```
