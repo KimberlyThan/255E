@@ -1,0 +1,99 @@
+---
+title: "KimThan_Portfolio"
+author: "Kimberly Than"
+date: "October 25, 2017"
+output: word_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Import data
+
+Here, I would have imported an Excel file that has multiple sheets (control, glutamate, xanthurenic acid at different doses).
+
+```{r importData}
+library(xlsx)
+
+df = read.xlsx("../data/MasterGlutamateSpreadsheet.xlsx")
+```
+
+## Including plots for over time 
+
+Here, I would include code to plotting line graphs to show effects over time for Final Static Time (FST) and Dynamic Index (DI). 
+For each plot, I want to graph 4 line over time where each line is the average of all trials specific to that dose/condition. 
+For the DI plot, I need to make a calculation first, where I am subtracting two values (DynamicPeak - InitialStaticTime) and inputing 
+those values into a new data frame where I can plot it easily. I want to include error bars for each condition as well as a color using
+colorBrewer package. The plot after time 21 minutes will be a different color to denote drug exposure. 
+
+```{r plotOT}
+##### plot FST #####
+
+# Perhaps a for loop for taking averages of different "doses"
+
+# avgTCFST = take the average of FST at each time point of all TC trials 
+
+# avgGlu1FST = take the average of FST at each time point of all 1mM glutamate trials
+# avgGlu3FST = take the average of FST at each time point of all 3mM glutamate trials
+# avgGlu5FST = take the average of FST at each time point of all 5mM glutamate trials 
+
+# avgXA1FST = take the average of FST at each time point of all 1mM xanthurenic acid trials 
+# avgXA3FST = take the average of FST at each time point of all 3mM xanthurenic acid trials 
+# avgXA10FST = take the average of FST at each time point of all 10mM xanthurenic acid trials 
+
+# Time control vs. Glutamate
+# Plot avgTCFST (x = time in minutes, y = instantaneous frequency (%baseline))
+# Add error bars of time control
+# lines for avgGlu1FST, avgGlu3FST, avgGlu5FST
+# Add error bars of each dose
+
+##### plot DI #####
+
+# DynamicIndex = DynamicPeak - InitialStaticTime
+# Create new data set for this calculation, grabbing values tagged 'DP' and 'IST'
+
+# avgTCDI = take the average of DI at each time point of all TC trials 
+
+# avgGlu1DI = take the average of DI at each time point of all 1mM glutamate trials
+# avgGlu3DI = take the average of DI at each time point of all 3mM glutamate trials
+# avgGlu5DI = take the average of DI at each time point of all 5mM glutamate trials 
+
+# avgXA1DI = take the average of DI at each time point of all 1mM xanthurenic acid trials 
+# avgXA3DI = take the average of DI at each time point of all 3mM xanthurenic acid trials 
+# avgXA10DI = take the average of DI at each time point of all 10mM xanthurenic acid trials 
+
+# Time control vs. Glutamate
+# Plot avgTCDI (x = time in minutes, y = instantaneous frequency (%baseline))
+# Add error bars of time control
+# lines for avgGlu1DI, avgGlu3DI, avgGlu5DI
+# Add error bars of each dose
+
+```
+
+## Including scatterplots for peak FST and DI 
+
+Here, I want to plot the maxiumum values of each trial of each dose/condition. I want two graphs, one comparing control to the different 
+doses of glutamate and the other comparing to xanthurenic acid. Error bars should be included per dose/condition, as well as different 
+colors to show distinuction. 
+
+```{r plotSC}
+##### Plot FST #####
+
+# Extract maximum points per trial per condition and put them on a scatterplot with the values 'jittered'.
+# Definitely need a for loop to make this process simplier.
+# Include error bars for each condition 
+# Repeat for DI
+# Four scatter plots:
+#     1. FST TC vs Glu (1, 3, 5 mM)
+#     2. FST TC vs XA (1, 3, 10 mM)
+#     3. DI TC vs Glu (1, 3, 5 mM)
+#     4. DI TC vs XA (1, 3, 10 mM)
+
+```
+
+## Statistics 
+
+TENTATIVE
+Maximum changes in FST and DI compared by condition or responder using a One-Way ANOVA with Dunnett post-hoc. Average over time analyses were compared using a repeated measure with time as the within-subjects variable and condition as the between-subjects factor with Tukey post-hoc.  
+
