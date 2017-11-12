@@ -11,12 +11,32 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ## Import data
 
-Here, I would have imported an Excel file that has multiple sheets (control, glutamate, xanthurenic acid at different doses).
+I used the package 'XLConnect' to read the data from each sheet of my excel workbook. Each sheet contains data for different drugs and drug doses. This package allowed me to get all of the sheet names and put the sheets into a list of data frames. 
+
+Note: if the package 'xlsx' was loaded before, there will be complications with running 'XLConnect'. 
 
 ```{r importData}
-library(xlsx)
+# Install and load packages 
+pkg = c("XLConnect")
+new.pkg <- pkg[!(pkg %in% installed.packages())]
+if (length(new.pkg)) {
+  install.packages(new.pkg)
+}
 
-df = read.xlsx("../data/MasterGlutamateSpreadsheet.xlsx")
+library(XLConnect)
+
+# Load excel workbook
+df = loadWorkbook("../data/MasterGlutamateSpreadsheet.xlsx")
+
+# Get sheet names
+sheetNames = getSheets(df)
+names(sheetNames) = sheetNames
+
+# Put sheets into a list of data frames
+sheetList = lapply(sheetNames, function(.sheet){readWorksheet(object=df, .sheet)})
+
+# Read each excel worksheet as individual dataframes
+for (i in 1:length(sheetList)){assign(paste0("df", i), as.data.frame(sheetList[i]))}
 ```
 
 ## Including plots for over time 
