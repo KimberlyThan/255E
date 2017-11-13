@@ -35,11 +35,17 @@ names(sheetNames) = sheetNames
 # Put sheets into a list of data frames
 sheetList = lapply(sheetNames, function(.sheet){readWorksheet(object=df, .sheet)})
 
-# Read each excel worksheet as individual dataframes
+# Read each excel worksheet as individual 
 for (i in 1:length(sheetList)){assign(paste0("df", i), as.data.frame(sheetList[i]))}
+
+# data = rbind.data.frame(df1, df2, df3)
 ```
 
-## Including plots for over time 
+## Including plots for over time data
+
+In the in vitro muscle-nerve experiments, muscles were stretched for a duration of 4 seconds. Instantaneous frequency of the neural firing were recorded at different time points of that ramp-and-hold stretches. Initial Static Time (IST) is the average instantaneous frequency at 0.4 - 0.6 seconds into the stretch. Final Static Time (FST) is the average instantaneous frequency at 3.75 - 3.75 seconds into the stretch. Dynamic Peak (DP) is the highest instantaneous frequency during the ramp up portion of the ramp-and-hold stretch. Dynamic Index (DI) describes the difference in firing between DP and IST. FST, IST, and DP values are included in the excel workbook. 
+
+The graphs below shows the effect of the drug dose in comparison to the control over time.
 
 Here, I would include code to plotting line graphs to show effects over time for Final Static Time (FST) and Dynamic Index (DI). 
 For each plot, I want to graph 4 line over time where each line is the average of all trials specific to that dose/condition. 
@@ -50,9 +56,47 @@ colorBrewer package. The plot after time 21 minutes will be a different color to
 ```{r plotOT}
 ##### plot FST #####
 
-# Perhaps a for loop for taking averages of different "doses"
+# Average values in r1 - r6 (internal control, baseline) of each row 
+df1$avgBL = rowMeans(df1[, 11:16])
+df2$avgBL = rowMeans(df2[, 11:16])
+df3$avgBL = rowMeans(df3[, 11:16])
 
-# avgTCFST = take the average of FST at each time point of all TC trials 
+# Normalize all values by avgBL as a percentage of baseline 
+df1$percentBL = df1[ ,11:28]/df1$avgBL*100
+df1$percentBL = df1[ ,11:28]/df1$avgBL*100
+df1$percentBL = df1[ ,11:28]/df1$avgBL*100
+
+# Average FST at each time point of all TC trials 
+avgTCFST = aggregate(df1[ ,-c(1:29)], by = list(df1$TimeControl.Position), mean)
+
+
+sdTCFST = aggregate(df1[ ,-c(1:29)], by = list(df1$TimeControl.Position), sd)
+nTCFST = aggregate(df1[ ,-c(1:29)], by = list(df1$TimeControl.Position), length)
+
+SETCFST=sdTCFST[,-1]/sqrt(nTCFST[,-1])
+lowerSE = avgTCFST[,-1] - SETCFST
+upperSE = avgTCFST[,-1] + SETCFST
+
+
+AnNum =unique(df1$TimeControl.AnimalNum)
+
+for (i in 1:length(AnNum)){
+  tempDP = df1[df1$TimeControl.AnimalNum == AnNum[i] , ]
+  
+  DP = tempDP[tempDP$TimeControl.Position== 'DP', 11:28]
+  IST = tempDP[tempDP$TimeControl.Position=='IST',11:28]
+  difference = DP-IST
+  
+  if (i == 1){
+      df1Diff = difference
+    df1Diff$AnimalNumber = AnNum[i]
+  } else {
+     difference$AnimalNumber = AnNum[i]
+     df1Diff = rbind(df1Diff, difference)
+  }
+
+  
+}
 
 # avgGlu1FST = take the average of FST at each time point of all 1mM glutamate trials
 # avgGlu3FST = take the average of FST at each time point of all 3mM glutamate trials
@@ -64,7 +108,10 @@ colorBrewer package. The plot after time 21 minutes will be a different color to
 
 # Time control vs. Glutamate
 # Plot avgTCFST (x = time in minutes, y = instantaneous frequency (%baseline))
+
+
 # Add error bars of time control
+# arrows()
 # lines for avgGlu1FST, avgGlu3FST, avgGlu5FST
 # Add error bars of each dose
 
@@ -72,6 +119,7 @@ colorBrewer package. The plot after time 21 minutes will be a different color to
 
 # DynamicIndex = DynamicPeak - InitialStaticTime
 # Create new data set for this calculation, grabbing values tagged 'DP' and 'IST'
+
 
 # avgTCDI = take the average of DI at each time point of all TC trials 
 
