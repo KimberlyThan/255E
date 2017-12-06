@@ -9,9 +9,15 @@ output: word_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+## Introduction
+
+Proprioception is the sense of relative body position in space and is necessary for completing complex motor tasks. There are specialized sensors in the muscle that sends information to the brain about muscle length and body position. This information is in the form of action potentials, in which the strength of the stimulus is coded into the frequency of the action potentials that are generated. In our experiments, a specific muscle is isolated and subjected to a series of ramp-and-hold stretches. Through extracellular recording, action potentials of a single neuron is recorded. The raw neural signal is then translated into quantifiable measurement, instantaneous firing frequency, which can be analyzed under different conditions. 
+
+The following code allows us to visualize changes in instantaneous firing frequency under different conditions (doses of glutamate and xanthurenic acid). 
+
 ## Download packages
 
-```{r packages}
+```{r packages, warning = FALSE}
 library(knitr)
 library(readxl)
 library(plyr)
@@ -19,8 +25,7 @@ library(dplyr)
 library(tidyr)
 library(reshape2)
 library(ggplot2)
-library(stargazer)
-library(car)
+library(RColorBrewer)
 ```
 
 ## Import data
@@ -42,16 +47,16 @@ list2env(mySheets, .GlobalEnv)
 
 # Combine all sheets into one data frame 
 df = do.call("rbind", mySheets)
-
+str(df)
 ```
 
 ## Including plots for over time data
 
-In the in vitro muscle-nerve experiments, muscles were stretched for a duration of 4 seconds. Instantaneous frequency of the neural firing were recorded at different time points of that ramp-and-hold stretches. Initial Static Time (IST) is the average instantaneous frequency at 0.4 - 0.6 seconds into the stretch. Final Static Time (FST) is the average instantaneous frequency at 3.75 - 3.75 seconds into the stretch. Dynamic Peak (DP) is the highest instantaneous frequency during the ramp up portion of the ramp-and-hold stretch. Dynamic Index (DI) describes the difference in firing between DP and IST. FST, IST, and DP values are included in the excel workbook. 
+In the in vitro muscle-nerve experiments, muscles were stretched for a duration of 4 seconds. Instantaneous frequency of the neural firing were recorded at different time points of that ramp-and-hold stretches. Initial Static Time (IST) is the average instantaneous frequency at 0.4 - 0.6 seconds into the stretch. Final Static Time (FST) is the average instantaneous frequency at 3.25 - 3.75 seconds into the stretch. Dynamic Peak (DP) is the highest instantaneous frequency during the ramp up portion of the ramp-and-hold stretch. Dynamic Index (DI) describes the difference in firing between DP and IST. FST, IST, and DP values are included in the excel workbook. 
 
 The graphs below shows the effect of the drug dose in comparison to the control over time.
 
-```{r plotLineGraphs}
+```{r plotLineGraphFST, warning = FALSE}
 ##### Plot FST Over Time #####
 
 # Average values in T0 - T17.5 (internal control, baseline) of each row 
@@ -79,11 +84,15 @@ avgFST = melt(avgFST)
 avgFST$rowID = 1:6
 
 # Plotting FST values over time
-ggplot(avgFST, aes(variable, value, group = factor(Dose), color = Dose)) + geom_line() + geom_point() + 
+ggplot(avgFST, aes(variable, value, group = factor(Dose), color = Dose)) + 
+  geom_line() + geom_point() + 
   ggtitle('Changes in average FST over time') +
-  xlab('Time (minutes)') + ylab('Instantaneous Firing Frequency (%BL)') +
+  xlab('Time (minutes)') + 
+  ylab('Instantaneous Firing Frequency (%BL)') +
   theme(plot.title = element_text(hjust = 0.5))
+```
 
+```{r plotLineGraphDI, warning = FALSE}
 ##### plot DI #####
 
 # Calculate DI by taking the difference of DP and IST 
@@ -99,8 +108,10 @@ for (i in 1:length(AnNum)){
   if (i == 1){
     dfDI = DI
     dfDI$AnimalNumber = AnNum[i]
+    dfDI$Dose = as.character(tempDP[1,"Dose"])
   } else {
     DI$AnimalNumber = AnNum[i]
+    DI$Dose = as.character(tempDP[1, "Dose"])
     dfDI = rbind(dfDI, DI)
   }
 }
@@ -112,45 +123,25 @@ dfDI$avgBL = rowMeans(dfDI[ ,1:6], na.rm = TRUE)
 rawNum2 = dfDI[ ,1:18]
 dfDI = transform(dfDI, percentBL = (rawNum2/dfDI$avgBL)*100)
 
-DIControl = dfDI[1:10,]
-DIGlu1mM = dfDI[11:22,]
-DIGlu3mM = dfDI[23:24,]
-DIXA1mM = dfDI[25:33,]
-DIXA3mM = dfDI[34:50,]
-DIXA10mM = dfDI[51:56,]
+# Average DI for each dose
+dfAvgDI = dfDI %>%
+  group_by(Dose) %>%
+  summarise_each(funs(mean(., na.rm = TRUE)))
 
-DIControl = DIControl %>% summarise_each(funs(mean))
-DIGlu1mM = DIGlu1mM %>% summarise_each(funs(mean))
-DIGlu3mM = DIGlu3mM %>% summarise_each(funs(mean))
-DIXA1mM = DIXA1mM %>% summarise_each(funs(mean))
-DIXA3mM = DIXA3mM %>% summarise_each(funs(mean))
-DIXA10mM = DIXA10mM %>% summarise_each(funs(mean))
+# Cleaning up the data frame and column names 
+avgDIPercentBL = dfAvgDI[-c(2:21)]
+colnames(avgDIPercentBL) = gsub('percentBL.T', '', colnames(avgDIPercentBL), fixed = TRUE)
 
-DIControl = DIControl[-c(1:20)]
-DIGlu1mM = DIGlu1mM[-c(1:20)]
-DIGlu3mM = DIGlu3mM[-c(1:20)]
-DIXA1mM = DIXA1mM[-c(1:20)]
-DIXA3mM = DIXA3mM[-c(1:20)]
-DIXA10mM = DIXA10mM[-c(1:20)]
+# Transposing the data frame 
+avgDIPercentBL = melt(avgDIPercentBL)
+avgDIPercentBL$rowID = 1:6
 
-colnames(DIControl) = gsub('percentBL.T', '', colnames(DIControl), fixed = TRUE)
-colnames(DIGlu1mM) = gsub('percentBL.T', '', colnames(DIGlu1mM), fixed = TRUE)
-colnames(DIGlu3mM) = gsub('percentBL.T', '', colnames(DIGlu3mM), fixed = TRUE)
-colnames(DIXA1mM) = gsub('percentBL.T', '', colnames(DIXA1mM), fixed = TRUE)
-colnames(DIXA3mM) = gsub('percentBL.T', '', colnames(DIXA3mM), fixed = TRUE)
-colnames(DIXA10mM) = gsub('percentBL.T', '', colnames(DIXA10mM), fixed = TRUE)
-
-avgDI = rbind(DIControl, DIGlu1mM, DIXA1mM, DIXA3mM, DIXA10mM)
-
-avgDI = melt(avgDI)
-avgDI$rowID = 1:5
-
-ggplot(avgDI, aes(variable, value, group = factor(rowID), color = rowID)) + geom_line() + geom_point() + 
+# Plotting DI values over time
+ggplot(avgDIPercentBL, aes(variable, value, group = factor(Dose), color = Dose)) + geom_line() + geom_point() + 
   ggtitle('Changes in average DI over time') +
   xlab('Time (minutes)') + ylab('Instantaneous Firing Frequency (%BL)') +
   theme(plot.title = element_text(hjust = 0.5))
 ```
-
 
 ## Including scatterplots for peak FST and DI 
 
@@ -158,31 +149,50 @@ Here, I want to plot the maxiumum values of each trial of each dose/condition. I
 doses of glutamate and the other comparing to xanthurenic acid. Error bars should be included per dose/condition, as well as different 
 colors to show distinuction. 
 
-```{r plotSC}
+```{r plotSC, warning = FALSE}
 ##### Plot FST #####
 
-instFreq = df[-c(1:8, 11:29)]
+# Create a data frame with only instantaneous frequency as a percentage of baseline
+percentBL = df[-c(1:8, 11:29)]
 
-splitPosition2 = split(instFreq, instFreq$Position)
-instFreq2 = splitPosition2$FST
+splitFST = split(percentBL, percentBL$Position)
+FSTPercentBL = splitFST$FST
 
-instFreq2 = instFreq2 %>% subset(select = 9:20, na.rm = TRUE) %>% mutate(max = do.call(pmax, (.))) %>%
-  select(max) %>% cbind(instFreq2)
+splitGlu = FSTPercentBL[1:24,]
 
-instFreq2 = instFreq2 %>% subset(select = 10:21, na.rm = TRUE) %>% mutate(min = do.call(pmin, (.))) %>%
-  select(min) %>% cbind(instFreq2)
+gluPercentBL = splitGlu %>% subset(select = 9:20) %>% mutate(max = do.call(pmax, c(.,na.rm = TRUE))) %>%
+  select(max) %>% cbind(splitGlu)
 
 # Subset groups 
-SC <- instFreq2 %>% 
-  filter(Dose %in% c('Control', '1mM_glu', '3mM_glu', '1mM_XA', '3mM_XA', '10mM_XA'))
+gluSC <- gluPercentBL %>% 
+  filter(Dose %in% c('Control', '1mM_glu', '3mM_glu'))
 # Scatter plot
-ggplot(na.omit(SC), aes(Dose, as.numeric(max))) +
+ggplot(na.omit(gluSC), aes(Dose, as.numeric(max))) +
   geom_jitter(shape = 1, size = 4, position = position_jitter(width = 0.2, height = 0.2)) +
   stat_summary(fun.y = median, fun.ymin = median, fun.ymax = median, geom = "crossbar", width = 0.2, size =1) +
   xlab("") +
   ylab("Instantaneous Frequency (%BL)") +
-  ggtitle("Max FST Instantaneous Frequency")
-  theme_minimal(base_size = 16)
+  ggtitle("Max FST Instantaneous Frequency") +
+  theme_minimal(base_size = 16) +
+  theme(plot.title = element_text(hjust = 0.5))
+
+
+splitXA = FSTPercentBL[-c(11:24),]
+
+XAPercentBL = splitXA %>% subset(select = 9:20) %>% mutate(min = do.call(pmin, c(.,na.rm = TRUE))) %>%
+  select(min) %>% cbind(splitXA)
+
+# Subset groups 
+XASC <- XAPercentBL %>% 
+  filter(Dose %in% c('Control', '1mM_XA', '3mM_XA', '10mM_XA'))
+# Scatter plot
+ggplot(na.omit(XASC), aes(Dose, as.numeric(min))) +
+  geom_jitter(shape = 1, size = 4, position = position_jitter(width = 0.2, height = 0.2)) +
+  stat_summary(fun.y = median, fun.ymin = median, fun.ymax = median, geom = "crossbar", width = 0.2, size =1) +
+  xlab("") +
+  ylab("Instantaneous Frequency (%BL)") +
+  ggtitle("Max FST Instantaneous Frequency") +
+  theme_minimal(base_size = 16) +
   theme(plot.title = element_text(hjust = 0.5))
 ```
 
@@ -191,13 +201,13 @@ ggplot(na.omit(SC), aes(Dose, as.numeric(max))) +
 Maximum changes in FST and compared by condition or responder using a One-Way ANOVA with Tukey HSD. This is used to test the significance between two means.   
 
 ```{r Stats, results='asis'}
-GluMax = instFreq2[1:24, 2:3]
-XAMax = instFreq2[-(11:24), 1:3]
-XAMax = XAMax[ ,-(2)]
+#GluMax = instFreq2[1:24, 2:3]
+#XAMax = instFreq2[-(11:24), 1:3]
+#XAMax = XAMax[ ,-(2)]
 
-anova_Glu = aov(max ~ Dose, data = GluMax)
-summary(anova_Glu)
+#anova_Glu = aov(max ~ Dose, data = GluMax)
+#summary(anova_Glu)
 
-anova_XA = aov(min ~ Dose, data = XAMax)
-summary(anova_XA)
+#anova_XA = aov(min ~ Dose, data = XAMax)
+#summary(anova_XA)
 ```
