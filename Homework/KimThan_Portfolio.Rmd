@@ -1,7 +1,7 @@
 ---
 title: "KimThan_Portfolio"
 author: "Kimberly Than"
-date: "October 25, 2017"
+date: "December 13, 2017"
 output: word_document
 ---
 
@@ -11,7 +11,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ## Introduction
 
-Proprioception is the sense of relative body position in space and is necessary for completing complex motor tasks. There are specialized sensors in the muscle that sends information to the brain about muscle length and body position. This information is in the form of action potentials, in which the strength of the stimulus is coded into the frequency of the action potentials that are generated. In our experiments, a specific muscle is isolated and subjected to a series of ramp-and-hold stretches. Through extracellular recording, action potentials of a single neuron is recorded. The raw neural signal is then translated into quantifiable measurement, instantaneous firing frequency, which can be analyzed under different conditions. 
+Proprioception is the sense of relative body position in space and is necessary for completing complex motor tasks. There are specialized sensors in the muscle that sends information to the brain about muscle length and body position. This information is in the form of action potentials, in which the strength of the stimulus is coded into the frequency of the action potentials that are generated. In our experiments, a specific muscle is isolated and subjected to a series of ramp-and-hold stretches. Through extracellular recording, action potentials of a single neuron are recorded. The raw neural signal is then translated into quantifiable measurement, instantaneous firing frequency, which can be analyzed to compare changes under different conditions. 
 
 The following code allows us to visualize changes in instantaneous firing frequency under different conditions (doses of glutamate and xanthurenic acid). 
 
@@ -26,11 +26,14 @@ library(tidyr)
 library(reshape2)
 library(ggplot2)
 library(RColorBrewer)
+library(car)
 ```
 
 ## Import data
 
 The package 'readxl' was used to read the data from each sheet of my excel workbook. Each sheet contains data for different drugs and drug doses. This package allowed me to get all of the sheet names and put the sheets into a list of data frames, I then separated them into varying data frames named after their respective worksheet name. 
+
+The important variables to note are: dose, position, animal number, and values at time 0 - 59.5 minutes. 
 
 ```{r importData}
 # Read all sheets and have each worksheet in a list of data frames 
@@ -54,9 +57,11 @@ str(df)
 
 In the in vitro muscle-nerve experiments, muscles were stretched for a duration of 4 seconds. Instantaneous frequency of the neural firing were recorded at different time points of that ramp-and-hold stretches. Initial Static Time (IST) is the average instantaneous frequency at 0.4 - 0.6 seconds into the stretch. Final Static Time (FST) is the average instantaneous frequency at 3.25 - 3.75 seconds into the stretch. Dynamic Peak (DP) is the highest instantaneous frequency during the ramp up portion of the ramp-and-hold stretch. Dynamic Index (DI) describes the difference in firing between DP and IST. FST, IST, and DP values are included in the excel workbook. 
 
+![Example of raw neural trace of a 4 second ramp-and-hold stretch.](../data/SampleRamp.png)
+
 The graphs below shows the effect of the drug dose in comparison to the control over time.
 
-```{r plotLineGraphFST, warning = FALSE}
+```{r plotLineGraphFST, warning = FALSE, fig.height = 5, fig.width = 10, dpi = 300}
 ##### Plot FST Over Time #####
 
 # Average values in T0 - T17.5 (internal control, baseline) of each row 
@@ -69,7 +74,7 @@ df = transform(df, percentBL = (rawNum/df$avgBL)*100)
 # Average each time position (FST, IST, DP) for each dose
 dfAvg = df %>%
   group_by(Dose, Position) %>%
-  summarise_each(funs(mean(., na.rm = TRUE)))
+  summarise_all(funs(mean(., na.rm = TRUE)))
 
 # Cleaning up the data frame and column names 
 avgPercentBL = dfAvg[-c(3:29)]
@@ -79,9 +84,9 @@ colnames(avgPercentBL) = gsub('percentBL.T', '', colnames(avgPercentBL), fixed =
 splitPosition = split(avgPercentBL, avgPercentBL$Position)
 avgFST = splitPosition$FST
 
-# Transposing the data frame 
+# Transposing the data frame to long form to easily graph
 avgFST = melt(avgFST)
-avgFST$rowID = 1:6
+head(avgFST)
 
 # Plotting FST values over time
 ggplot(avgFST, aes(variable, value, group = factor(Dose), color = Dose)) + 
@@ -92,7 +97,7 @@ ggplot(avgFST, aes(variable, value, group = factor(Dose), color = Dose)) +
   theme(plot.title = element_text(hjust = 0.5))
 ```
 
-```{r plotLineGraphDI, warning = FALSE}
+```{r plotLineGraphDI, warning = FALSE, fig.height = 5, fig.width = 10, dpi = 300}
 ##### plot DI #####
 
 # Calculate DI by taking the difference of DP and IST 
@@ -116,6 +121,8 @@ for (i in 1:length(AnNum)){
   }
 }
 
+head(dfDI)
+
 # Average values in T0 - T17.5 (internal control, baseline) of each row 
 dfDI$avgBL = rowMeans(dfDI[ ,1:6], na.rm = TRUE)
 
@@ -126,15 +133,15 @@ dfDI = transform(dfDI, percentBL = (rawNum2/dfDI$avgBL)*100)
 # Average DI for each dose
 dfAvgDI = dfDI %>%
   group_by(Dose) %>%
-  summarise_each(funs(mean(., na.rm = TRUE)))
+  summarise_all(funs(mean(., na.rm = TRUE)))
 
 # Cleaning up the data frame and column names 
 avgDIPercentBL = dfAvgDI[-c(2:21)]
 colnames(avgDIPercentBL) = gsub('percentBL.T', '', colnames(avgDIPercentBL), fixed = TRUE)
 
-# Transposing the data frame 
+# Transposing the data frame to long form to easily graph
 avgDIPercentBL = melt(avgDIPercentBL)
-avgDIPercentBL$rowID = 1:6
+str(avgDIPercentBL)
 
 # Plotting DI values over time
 ggplot(avgDIPercentBL, aes(variable, value, group = factor(Dose), color = Dose)) + geom_line() + geom_point() + 
@@ -145,69 +152,133 @@ ggplot(avgDIPercentBL, aes(variable, value, group = factor(Dose), color = Dose))
 
 ## Including scatterplots for peak FST and DI 
 
-Here, I want to plot the maxiumum values of each trial of each dose/condition. I want two graphs, one comparing control to the different 
-doses of glutamate and the other comparing to xanthurenic acid. Error bars should be included per dose/condition, as well as different 
-colors to show distinuction. 
+Glutamate is present in the terminal ends of the sensory neurons that innervate the proprioceptive sensory organ, the muscle spindle. Glutamate is thought to increase the sensitivity and responsiveness, which is why we want to see the peak FST values in each trial. By blocking the packaging of glutamate into synaptic-like vesicles by xanthurenic acid, the glutamate content should be depleted over time, which is why we wanted to see the minimum values per trial upon XA exposure.
 
-```{r plotSC, warning = FALSE}
-##### Plot FST #####
+The maximum change of glutamate of each trial is plotted in comparison to the control trials. Whereas, the minimum change of xanthurenic acid of each trial is plotted in comparison to the control trials.
+
+Each point represents the maximum/minimum value of a trial.
+
+```{r plotSCFST, warning = FALSE, fig.height = 5, fig.width = 10, dpi = 300}
+##### Plot maximum FST for glutamate #####
 
 # Create a data frame with only instantaneous frequency as a percentage of baseline
 percentBL = df[-c(1:8, 11:29)]
 
+# Extracting FST data 
 splitFST = split(percentBL, percentBL$Position)
 FSTPercentBL = splitFST$FST
 
+# Subsetting data to only include percent BL of control and glutamate doses 
 splitGlu = FSTPercentBL[1:24,]
 
+# Taking the maximum values of each trial and putting it in the first column 
 gluPercentBL = splitGlu %>% subset(select = 9:20) %>% mutate(max = do.call(pmax, c(.,na.rm = TRUE))) %>%
   select(max) %>% cbind(splitGlu)
+head(gluPercentBL)
 
-# Subset groups 
+# Subset groups by dose
 gluSC <- gluPercentBL %>% 
   filter(Dose %in% c('Control', '1mM_glu', '3mM_glu'))
-# Scatter plot
-ggplot(na.omit(gluSC), aes(Dose, as.numeric(max))) +
-  geom_jitter(shape = 1, size = 4, position = position_jitter(width = 0.2, height = 0.2)) +
-  stat_summary(fun.y = median, fun.ymin = median, fun.ymax = median, geom = "crossbar", width = 0.2, size =1) +
+# Scatter plot of maximum points in control and glutamate doses 
+ggplot(na.omit(gluSC), aes(Dose, as.numeric(max), color = Dose)) +
+  geom_jitter(shape = 1, size = 5, position = position_jitter(width = 0.2, height = 0)) +
+  stat_summary(fun.y = mean, fun.ymin = mean, fun.ymax = mean, geom = "crossbar", width = 0.2, size = 1) +
   xlab("") +
   ylab("Instantaneous Frequency (%BL)") +
   ggtitle("Max FST Instantaneous Frequency") +
   theme_minimal(base_size = 16) +
   theme(plot.title = element_text(hjust = 0.5))
 
+##### Plot minimum FST for xanthurenic acid #####
 
+# Subsetting data to only include percent BL of control and xanthurenic acid doses
 splitXA = FSTPercentBL[-c(11:24),]
 
+# Taking the minimum values of each trial and putting it in the first column
 XAPercentBL = splitXA %>% subset(select = 9:20) %>% mutate(min = do.call(pmin, c(.,na.rm = TRUE))) %>%
   select(min) %>% cbind(splitXA)
+head(XAPercentBL)
 
-# Subset groups 
+# Subset groups by dose
 XASC <- XAPercentBL %>% 
   filter(Dose %in% c('Control', '1mM_XA', '3mM_XA', '10mM_XA'))
-# Scatter plot
-ggplot(na.omit(XASC), aes(Dose, as.numeric(min))) +
-  geom_jitter(shape = 1, size = 4, position = position_jitter(width = 0.2, height = 0.2)) +
-  stat_summary(fun.y = median, fun.ymin = median, fun.ymax = median, geom = "crossbar", width = 0.2, size =1) +
+# Scatter plot of minimum points in control and xanthurenic acid doses
+ggplot(na.omit(XASC), aes(Dose, as.numeric(min), color = Dose)) +
+  geom_jitter(shape = 1, size = 5, position = position_jitter(width = 0.2, height = 0)) +
+  stat_summary(fun.y = mean, fun.ymin = mean, fun.ymax = mean, geom = "crossbar", width = 0.2, size = 1) +
   xlab("") +
   ylab("Instantaneous Frequency (%BL)") +
-  ggtitle("Max FST Instantaneous Frequency") +
+  ggtitle("Min FST Instantaneous Frequency") +
+  theme_minimal(base_size = 16) +
+  theme(plot.title = element_text(hjust = 0.5))
+```
+
+```{r plotSCDI, warning = FALSE, fig.height = 5, fig.width = 10, dpi = 300}
+##### Plot maximum DI for glutamate #####
+
+# Create a data frame with only instantaneous frequency as a percentage of baseline
+DIpercentBL = dfDI[-c(1:19)]
+DIpercentBL = subset(DIpercentBL, select = -avgBL)
+
+# Subsetting data to only include percent BL of control and glutamate doses 
+splitGluDI = DIpercentBL[1:24,]
+
+# Taking the maximum values of each trial and putting it in the first column 
+gluDIpercentBL = splitGluDI %>% subset(select = 8:19) %>% mutate(max = do.call(pmax, c(.,na.rm = TRUE))) %>%
+  select(max) %>% cbind(splitGluDI)
+head(gluDIpercentBL)
+
+# Subset groups by dose
+gluSCDI <- gluDIpercentBL %>% 
+  filter(Dose %in% c('Control', '1mM_glu', '3mM_glu'))
+# Scatter plot of maximum points in control and glutamate doses 
+ggplot(na.omit(gluSCDI), aes(Dose, as.numeric(max), color = Dose)) +
+  geom_jitter(shape = 1, size = 5, position = position_jitter(width = 0.2, height = 0)) +
+  stat_summary(fun.y = mean, fun.ymin = mean, fun.ymax = mean, geom = "crossbar", width = 0.2, size = 1) +
+  xlab("") +
+  ylab("Instantaneous Frequency (%BL)") +
+  ggtitle("Max DI Instantaneous Frequency") +
+  theme_minimal(base_size = 16) +
+  theme(plot.title = element_text(hjust = 0.5))
+
+##### Plot minimum DI for xanthurenic acid #####
+
+# Subsetting data to only include percent BL of control and xanthurenic acid doses
+splitXADI = DIpercentBL[-c(11:24),]
+
+# Taking the minimum values of each trial and putting it in the first column
+XADIpercentBL = splitXADI %>% subset(select = 8:19) %>% mutate(min = do.call(pmin, c(.,na.rm = TRUE))) %>%
+  select(min) %>% cbind(splitXADI)
+head(XADIpercentBL)
+
+# Subset groups by dose
+XASCDI <- XADIpercentBL %>% 
+  filter(Dose %in% c('Control', '1mM_XA', '3mM_XA', '10mM_XA'))
+# Scatter plot of minimum points in control and xanthurenic acid doses
+ggplot(na.omit(XASCDI), aes(Dose, as.numeric(min), color = Dose)) +
+  geom_jitter(shape = 1, size = 5, position = position_jitter(width = 0.2, height = 0)) +
+  stat_summary(fun.y = mean, fun.ymin = mean, fun.ymax = mean, geom = "crossbar", width = 0.2, size = 1) +
+  xlab("") +
+  ylab("Instantaneous Frequency (%BL)") +
+  ggtitle("Min DI Instantaneous Frequency") +
   theme_minimal(base_size = 16) +
   theme(plot.title = element_text(hjust = 0.5))
 ```
 
 ## Statistics 
 
-Maximum changes in FST and compared by condition or responder using a One-Way ANOVA with Tukey HSD. This is used to test the significance between two means.   
+Maximum changes in FST and compared by condition or responder using a One-Way ANOVA with Tukey HSD. This is used to test the significance between two means. There are more control files that have not been analyzed yet, and therefore not included in this code. Significance may change once all files are included (or exclusion of some current files).    
 
 ```{r Stats, results='asis'}
-#GluMax = instFreq2[1:24, 2:3]
-#XAMax = instFreq2[-(11:24), 1:3]
-#XAMax = XAMax[ ,-(2)]
+anovaGluFST = aov(max ~ Dose, data = gluPercentBL)
+kable(Anova(anovaGluFST, type = 3), digits = 3)
 
-#anova_Glu = aov(max ~ Dose, data = GluMax)
-#summary(anova_Glu)
+anovaXA = aov(min ~ Dose, data = XAPercentBL)
+kable(Anova(anovaXA, type = 3), digits = 3)
 
-#anova_XA = aov(min ~ Dose, data = XAMax)
-#summary(anova_XA)
+anovaGluDI = aov(max ~ Dose, data = gluDIpercentBL)
+kable(Anova(anovaGluDI, type = 3), digits = 3)
+
+anovaXADI = aov(min ~ Dose, data = XADIpercentBL)
+kable(Anova(anovaXADI, type = 3), digits = 3)
 ```
