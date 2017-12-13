@@ -267,7 +267,9 @@ ggplot(na.omit(XASCDI), aes(Dose, as.numeric(min), color = Dose)) +
 
 ## Statistics 
 
-Maximum changes in FST and compared by condition or responder using a One-Way ANOVA with Tukey HSD. This is used to test the significance between two means. There are more control files that have not been analyzed yet, and therefore not included in this code. Significance may change once all files are included (or exclusion of some current files).    
+Maximum changes in FST and compared by condition or responder using a One-Way ANOVA with Tukey HSD. This is used to test the significance between means. In this instance, I am comparing the maximum value of FST or DI of each control and glutamate trial to see if the maximum averages are different. Under xanthurenic acid conditions, the averages of the minimum value of FST or DI of each trial is compared.
+
+There are more control files that have not been analyzed yet, and therefore not included in this code. Significance may change once all files are included (or exclusion of some current files).    
 
 ```{r Stats, results='asis'}
 anovaGluFST = aov(max ~ Dose, data = gluPercentBL)
